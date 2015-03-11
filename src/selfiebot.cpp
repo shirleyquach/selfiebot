@@ -24,9 +24,7 @@ int cooldown;
 int ledValue = 0;
 Mat frame;
 String face_cascade_name = "/home/linaro/catkin_ws/src/selfiebot/haarcascade_frontalface_alt.xml";
-String eyes_cascade_name = "/home/linaro/catkin_ws/src/selfiebot/haarcascade_eye_tree_eyeglasses.xml";
 CascadeClassifier face_cascade;
-CascadeClassifier eyes_cascade;
 string window_name = "Capture - Face detection";
 
 class ImageConverter
@@ -78,7 +76,6 @@ class ImageConverter
         frame = cv_ptr->image;
         //-- 1. Load the cascades
         if( !face_cascade.load( face_cascade_name ) ){ ROS_ERROR("--(!)Error loading\n"); return; };
-        if( !eyes_cascade.load( eyes_cascade_name ) ){ ROS_ERROR("--(!)Error loading\n"); return; };
 
         //-- 2. Apply the classifier to the frame
         if( !frame.empty() )
@@ -90,14 +87,14 @@ class ImageConverter
                 {
                     ledValue = 2;
                 }
-                else if ( difftime(time(NULL), timer) >= COOLDOWN_TIMER )
+                else
+                {
+                    ledValue = 0;
+                }
+                if ( difftime(time(NULL), timer) >= COOLDOWN_TIMER )
                 {
                     cooldown = 0;
                 }
-		else
-		{
-                    ledValue = 0;
-		}
             }
             /* FACE FOUND */
             else if ( hasFace() )
@@ -117,8 +114,8 @@ class ImageConverter
                     imwrite(outputfilename, outputImage);
                     ROS_INFO("Your picture has been taken =P");
                     cooldown = 1;
+                    ledValue = 2;
                 }
-                ledValue = 2;
             }
             /* FACE NOT FOUND */
             else
@@ -142,8 +139,8 @@ int main(int argc, char **argv)
 
     while ( ros::ok() )
     {
-         value.data = ledValue;
-         pub.publish(value);
-         ros::spinOnce();
+        value.data = ledValue;
+        pub.publish(value);
+        ros::spinOnce();
     }
 }
