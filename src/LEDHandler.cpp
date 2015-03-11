@@ -1,13 +1,12 @@
 #include "ros/ros.h"
 #include "std_msgs/Int8.h"
-
 #include <fstream>
 #include <iostream>
+
 #define LED_FILE "/sys/class/gpio/gpio206/value"
 #define FREQUENCY 2
 
 using namespace std;
-std_msgs::Int8::ConstPtr g_value;
 
 void write(ofstream &file, char character)
 {
