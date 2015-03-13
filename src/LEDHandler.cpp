@@ -28,9 +28,9 @@ void getValue(const std_msgs::Int8::ConstPtr &value)
             break;
         /* LED BLINKING */
         case 1:
-            write(file, '1');
-            rate.sleep();
             write(file, '0');
+            rate.sleep();
+            write(file, '1');
             rate.sleep();
             break;
         /* LED ON */

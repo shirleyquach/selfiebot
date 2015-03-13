@@ -11,7 +11,7 @@
 #include <std_msgs/Int8.h>
 
 #define COOLDOWN_TIMER 10
-#define COUNTDOWN_TIMER 3
+#define COUNTDOWN_TIMER 2
 #define IMAGE_DIRECTORY "/home/linaro/catkin_ws/src/selfiebot/images/"
 
 using namespace std;
@@ -26,13 +26,14 @@ Mat frame;
 String face_cascade_name = "/home/linaro/catkin_ws/src/selfiebot/haarcascade_frontalface_alt.xml";
 CascadeClassifier face_cascade;
 string window_name = "Capture - Face detection";
+ros::Publisher pub;
 
 class ImageConverter
 {
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
     image_transport::Subscriber image_sub_;
-
+    
     public:
     ImageConverter()
         : it_(nh_)
@@ -61,6 +62,9 @@ class ImageConverter
 
     void imageCb(const sensor_msgs::ImageConstPtr& msg)
     {
+
+        std_msgs::Int8 value;
+        value.data = 0;
         cv_bridge::CvImagePtr cv_ptr;
         try
         {
@@ -83,22 +87,31 @@ class ImageConverter
             /* ON COOLDOWN */
             if ( cooldown )
             {
-                if ( difftime(time(NULL), timer) <= 3 )
+                if ( difftime(time(NULL), timer) > 5 )
                 {
-                    ledValue = 2;
+                   /* value.data = 2;
+                    pub.publish(value);
                 }
                 else
-                {
-                    ledValue = 0;
-                }
+                {*/
+                    value.data = 0;
+                    pub.publish(value);
+                //}
+}
                 if ( difftime(time(NULL), timer) >= COOLDOWN_TIMER )
                 {
                     cooldown = 0;
                 }
             }
             /* FACE FOUND */
-            else if ( hasFace() )
+            else
             {
+              value.data = 2;
+              pub.publish(value);
+            if ( hasFace() )
+            {
+                //value.data = 2;
+                //pub.publish(value);
                 if ( !timer )
                 {
                     time(&timer);
@@ -112,17 +125,21 @@ class ImageConverter
                     snprintf(outputfilename, 80, "%simage_%s.jpg", IMAGE_DIRECTORY, timestring);
                     cvtColor( frame, outputImage, CV_BGR2RGB );
                     imwrite(outputfilename, outputImage);
-                    ROS_INFO("Your picture has been taken =P");
+                    ROS_INFO("Your picture has been taken =P"); 
+                    value.data = 1;
+                    pub.publish(value);
                     cooldown = 1;
-                    ledValue = 2;
                 }
             }
             /* FACE NOT FOUND */
             else
             {
                 timer = 0;
-                ledValue = 0;
+                //ledValue = 0;
+                //value.data = 0;
+                //pub.publish(value);
             }
+}
         }
         else
         { ROS_ERROR(" --(!) No captured frame -- Break!"); return;}
@@ -134,13 +151,15 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "selfiebot");
     ros::NodeHandle n;
     ImageConverter ic;
-    ros::Publisher pub = n.advertise<std_msgs::Int8>("led_value", 1000);
-    std_msgs::Int8 value;
-
+    pub = n.advertise<std_msgs::Int8>("led_value", 1000);
     while ( ros::ok() )
     {
-        value.data = ledValue;
-        pub.publish(value);
+        //value.data = ledValue;
+        //pub.publish(value);
+        
         ros::spinOnce();
     }
+        std_msgs::Int8 value;
+        value.data = 0;
+        pub.publish(value);
 }
